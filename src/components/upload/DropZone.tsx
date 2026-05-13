@@ -74,14 +74,14 @@ export default function DropZone() {
   }, [selectedFile, isAnalyzing, router]);
 
   return (
-    <div className="flex flex-1 self-stretch flex-col gap-4">
+    <div className="flex min-w-0 flex-1 self-stretch flex-col gap-4">
       {/* Drop zone */}
       <div
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         className={clsx(
-          "relative flex flex-1 flex-col items-center justify-center rounded-xl border-2 border-dashed px-8 text-center transition-colors duration-200",
+          "relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed px-8 text-center transition-colors duration-200",
           isDragging
             ? "border-brand bg-[rgba(232,214,0,0.04)]"
             : "border-[rgba(255,255,255,0.12)] bg-surface hover:border-[rgba(232,214,0,0.4)]"
@@ -111,8 +111,8 @@ export default function DropZone() {
         </div>
 
         {selectedFile ? (
-          <div className="flex flex-col items-center gap-1">
-            <p className="font-machina text-sm font-[800] text-foreground">
+          <div className="flex w-full flex-col items-center gap-1">
+            <p className="w-full truncate text-center font-machina text-sm font-[800] text-foreground">
               {selectedFile.name}
             </p>
             <p className="font-sans text-xs text-muted">
