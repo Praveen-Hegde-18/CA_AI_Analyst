@@ -68,9 +68,47 @@ export default function DropZone() {
   const onAnalyze = useCallback(async () => {
     if (!selectedFile || isAnalyzing) return;
     setIsAnalyzing(true);
-    /* TODO: replace with real upload + analysis API call */
-    await new Promise((r) => setTimeout(r, 1800));
-    router.push("/analyze");
+    setError(null);
+
+    try {
+      // Pre-flight: confirm backend is reachable before uploading
+      try {
+        const healthController = new AbortController();
+        const healthTimer = setTimeout(() => healthController.abort(), 4000);
+        await fetch("http://localhost:8000/health", { signal: healthController.signal });
+        clearTimeout(healthTimer);
+      } catch {
+        setError("Cannot reach the analysis server on port 8000. Make sure the backend is running.");
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("video", selectedFile);
+
+      const res = await fetch("http://localhost:8000/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        if (res.status === 422) {
+          setError("Pose detection failed — ensure the video shows a single-ball delivery with a clearly visible batter.");
+        } else {
+          const body = await res.json().catch(() => ({}));
+          setError(body?.detail ?? `Analysis failed (status ${res.status}). Check the backend logs.`);
+        }
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const json = await res.json();
+      sessionStorage.setItem("shotResult", JSON.stringify(json));
+      router.push("/analyze");
+    } catch {
+      setError("Network error — the connection was lost during upload. Please try again.");
+      setIsAnalyzing(false);
+    }
   }, [selectedFile, isAnalyzing, router]);
 
   return (

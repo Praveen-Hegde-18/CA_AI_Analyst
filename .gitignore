@@ -54,3 +54,21 @@ Desktop.ini
 
 # Local AI/tooling state (machine-specific settings, not for teammates)
 .claude/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# PyTorch model weights (large binaries — store separately or use Git LFS)
+*.pt
+*.pth
+
+# Large ML data — not for version control
+ML_layer/
+dataset/
+new_processed/
+
+# Backend output videos (generated at runtime)
+Backend/processed/

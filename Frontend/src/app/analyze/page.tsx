@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/layout/Sidebar";
 import ShotMetrics from "@/components/analyze/ShotMetrics";
 import VideoPlayer from "@/components/analyze/VideoPlayer";
@@ -19,10 +22,27 @@ const MOCK_DATA: ShotAnalysisData = {
     { text: "Bat path was on line", type: "pass" },
     { text: "Slightly closed stance limited extension", type: "warn" },
   ],
-  voiceDuration: "00:12",
+  shotSummary:
+    "The batsman played a Cover Drive with 92% confidence. An elegant front-foot off-side shot executed with a stable head position and good foot movement. The bat path tracked the line of the ball cleanly through the off side. A slightly closed stance reduced full arm extension at follow-through, which could be improved for maximum power and control.",
 };
 
 export default function AnalyzePage() {
+  const [analysisData, setAnalysisData] = useState<ShotAnalysisData>(MOCK_DATA);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("shotResult");
+    if (raw) {
+      try {
+        const { analysisData: data, videoUrl: url } = JSON.parse(raw);
+        if (data) setAnalysisData(data);
+        if (url) setVideoUrl(url);
+      } catch {
+        // malformed storage — fall back to mock
+      }
+    }
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
@@ -43,10 +63,10 @@ export default function AnalyzePage() {
         </header>
 
         {/* Three-panel layout */}
-        <div className="flex flex-1 gap-4 overflow-hidden p-6">
-          <ShotMetrics data={MOCK_DATA} />
-          <VideoPlayer shotType={MOCK_DATA.shotType} side={MOCK_DATA.side} />
-          <ShotAnalysis data={MOCK_DATA} />
+        <div className="relative flex flex-1 gap-4 overflow-hidden p-6">
+          <ShotMetrics data={analysisData} />
+          <VideoPlayer shotType={analysisData.shotType} side={analysisData.side} videoUrl={videoUrl ?? undefined} />
+          <ShotAnalysis data={analysisData} videoUrl={videoUrl ?? undefined} />
         </div>
       </main>
     </div>

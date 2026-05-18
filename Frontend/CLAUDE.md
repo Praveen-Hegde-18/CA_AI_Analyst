@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Product context
 
-Cricket AI Analyst is an AI-powered coaching tool. Users upload cricket videos and receive automated shot analysis, technique feedback, and downloadable reports. The UI is complete (mock data); the backend pipeline is the next phase. See the pipeline and integration points documented in the Key patterns section below.
+**Kabuni Cricket AI** is an AI-powered coaching tool. Users upload a **single ball clip** (one delivery — bowler release to batsman shot) and receive automated shot analysis, technique feedback, and downloadable reports. Uploading a full over or match will not work; the pipeline is designed for one delivery at a time. The frontend is fully wired to the FastAPI backend — no mock data in the normal flow.
 
 ## Code quality standards
 
@@ -31,28 +31,49 @@ No test suite is configured yet.
 - `/` — upload screen (`src/app/page.tsx`)
 - `/analyze` — analysis screen (`src/app/analyze/page.tsx`)
 
-`/dashboard` is linked from the Sidebar but the route does not exist yet.
-
-Both pages are server components that compose client components from `src/components/`.
+`/` is a server component. `/analyze` is a `"use client"` component — it reads `sessionStorage.getItem("shotResult")` on mount and falls back to `MOCK_DATA` when visited directly.
 
 ### Component layout
 
 ```
 src/components/
-  layout/Sidebar.tsx        — shared nav; "Analyze Video" (/) and "Dashboard" (/dashboard); uses usePathname for active state
+  layout/Sidebar.tsx        — single nav item: "Analyze Video" (/); uses usePathname for active state
   ui/Badge.tsx              — status pill (completed / processing / failed)
   ui/CircularProgress.tsx   — SVG ring for confidence score; accepts optional size and strokeWidth props
   upload/DropZone.tsx       — drag-drop + file validation (MP4/MOV/AVI, max 5 GB) + Analyze button (client)
-  upload/HowItWorks.tsx     — static 4-step info panel (self-start, fixed 300px wide)
+  upload/HowItWorks.tsx     — 4-step info panel, 300px wide, max-h-full overflow-y-auto, self-start
   upload/RecentUploads.tsx  — table of past uploads (fully implemented; not placed on any page yet)
-  analyze/ShotMetrics.tsx   — left panel: shot type, batting hand, confidence ring; receives ShotAnalysisData
-  analyze/VideoPlayer.tsx   — center panel: cricket pitch SVG + pose-skeleton overlay + scrubber; needs shotType and side props
-  analyze/ShotAnalysis.tsx  — right panel: AI verdict, key points, mic/waveform, download; receives ShotAnalysisData
+  analyze/ShotMetrics.tsx   — left panel: shot type, batting hand, confidence ring + optional ML metrics panel (quality badge, score bars, phase scores); hidden when data.poseScore is undefined
+  analyze/VideoPlayer.tsx   — center panel: real <video> element when videoUrl prop provided; falls back to static cricket pitch SVG + skeleton overlay; scrubber wired to timeupdate event
+  analyze/ShotAnalysis.tsx  — right panel: AI Verdict → Shot Summary → AI Voice mic → Download; download triggers blob fetch when videoUrl is present
 ```
 
-Shared TypeScript interfaces live in `src/lib/types.ts` (`UploadRecord`, `ShotAnalysisData`, `KeyPoint`).
+Shared TypeScript interfaces live in `src/lib/types.ts` (`UploadRecord`, `ShotAnalysisData`, `KeyPoint`, `PhaseScores`).
 
-There are no API routes under `src/app/api/` yet.
+`ShotAnalysisData` shape (all optional ML fields absent in mock data, present in real backend response):
+```ts
+{
+  shotType: string;
+  battingHand: "Right Handed" | "Left Handed";
+  confidence: number;       // 0–100
+  side: string;
+  verdict: string;
+  verdictDetail: string;
+  keyPoints: KeyPoint[];    // rendered as warn/pass items; [!] prefix → warn, [OK] → pass
+  shotSummary: string;      // 3-sentence Claude coaching summary
+  // optional ML metrics — only present when real backend data is returned:
+  quality?: string;         // "Correct" | "Average" | "Incorrect"
+  poseScore?: number;       // 0–100
+  similarity?: number;      // 0–100
+  ruleScore?: number;       // 0–100
+  phaseScores?: PhaseScores;
+  impactDetected?: boolean;
+  impactConfidence?: number;
+  f1Score?: number | null;
+}
+```
+
+There are no Next.js API routes under `src/app/api/` — all backend calls go directly to `:8000`.
 
 ### Design tokens
 
@@ -84,9 +105,9 @@ Font files (woff2 + woff) are in `public/fonts/` and declared with `@font-face` 
 ### Key patterns
 
 - **Full-screen layouts**: both pages use `h-screen overflow-hidden` on the root, with the content area using `flex flex-1 overflow-hidden` so panels fill the viewport without scrolling.
-- **Upload page layout**: `DropZone` fills remaining space (`flex-1`); `HowItWorks` sits beside it at `w-[300px] shrink-0 self-start` — the `self-start` prevents it from stretching to the container height.
-- **Analyze button flow**: `DropZone` is a flex column — the dashed drop area fills available space, then a full-width "Analyze Video" button sits below it. The button is disabled until a file is selected; on click it runs `onAnalyze`, which does a simulated delay then calls `router.push('/analyze')`. Replace the `setTimeout` with the real upload + inference call.
-- **Mock data in page files**: `MOCK_DATA` in `analyze/page.tsx` stands in for the real API response — this is the integration point for the backend pipeline.
+- **Upload page layout**: `DropZone` fills remaining space (`flex-1`); `HowItWorks` sits beside it at `w-[300px] shrink-0 self-start max-h-full overflow-y-auto` — `self-start` prevents height-stretching; `max-h-full overflow-y-auto` prevents clipping when content is tall.
+- **Analyze button flow**: `DropZone` health-checks `GET :8000/health` (4 s timeout) before uploading. On failure it shows an inline error and aborts. On success it POSTs `FormData` to `:8000/analyze`, stores the JSON response in `sessionStorage`, then navigates to `/analyze`.
+- **Mock data fallback**: `MOCK_DATA` in `analyze/page.tsx` is used only when the page is visited directly (no `sessionStorage` key). Do not remove it — it keeps the route renderable in isolation.
 - **Borders**: use `border-[rgba(255,255,255,0.07)]` inline rather than a utility class, since the value sits below Tailwind's opacity-modifier threshold. This pattern is used consistently across all panels and table rows.
 - **One-off accent colors**: the AI Verdict box in `ShotAnalysis` uses `bg-[rgba(34,197,94,0.06)]` (green tint) — an intentional deviation from the brand palette; don't replicate this pattern elsewhere without reason.
-- **Backend integration points**: `DropZone.onAnalyze()` (replace `setTimeout`) → upload to backend → inference pipeline (pose estimation, shot classification, confidence scoring, voice feedback) → response shape matches `ShotAnalysisData` → rendered by the 3-panel analyze screen. `MOCK_DATA` in `analyze/page.tsx` is the drop-in replacement target.
+- **AI Voice section**: placeholder for the Kabuni voice API integration — the mic button toggles `listening` state only; no actual voice processing is wired.

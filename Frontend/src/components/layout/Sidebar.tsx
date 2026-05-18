@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Video } from "lucide-react";
+import { Video } from "lucide-react";
 import clsx from "clsx";
 
 const NAV_ITEMS = [
   { href: "/", label: "Analyze Video", icon: Video },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
 ];
 
 export default function Sidebar() {
@@ -42,10 +41,7 @@ export default function Sidebar() {
         </div>
         <div className="flex flex-col leading-tight">
           <span className="font-frama text-sm font-black text-foreground">
-            Cricket AI
-          </span>
-          <span className="font-machina text-[10px] font-[800] uppercase tracking-widest text-brand">
-            Analyst
+            Kabuni Cricket AI
           </span>
         </div>
       </div>

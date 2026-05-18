@@ -14,6 +14,12 @@ export interface KeyPoint {
   type: "pass" | "warn";
 }
 
+export interface PhaseScores {
+  backswing: number;
+  impact: number;
+  followThrough: number;
+}
+
 export interface ShotAnalysisData {
   shotType: string;
   battingHand: "Right Handed" | "Left Handed";
@@ -22,5 +28,14 @@ export interface ShotAnalysisData {
   verdict: string;
   verdictDetail: string;
   keyPoints: KeyPoint[];
-  voiceDuration: string;
+  shotSummary: string;
+  // Optional ML pipeline metrics — present when real backend data is returned
+  quality?: string;
+  poseScore?: number;
+  similarity?: number;
+  ruleScore?: number;
+  phaseScores?: PhaseScores;
+  impactDetected?: boolean;
+  impactConfidence?: number;
+  f1Score?: number | null;
 }

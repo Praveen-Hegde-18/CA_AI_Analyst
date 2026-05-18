@@ -15,8 +15,7 @@ export default function UploadPage() {
               Upload &amp; Analyze Video
             </h1>
             <p className="mt-1 font-sans text-sm text-muted">
-              Upload your cricket match video and let AI analyze shots, movements
-              and performance.
+              Upload a single ball clip — one delivery from bowler to batsman — and let AI analyze the shot, technique, and performance.
             </p>
           </div>
         </header>
