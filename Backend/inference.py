@@ -446,38 +446,40 @@ def analyze_shot_with_llm(result: dict) -> str:
     try:
         client  = anthropic.Anthropic()
         shot    = result['shot']
-        conf    = result['confidence']
         pose    = result['pose']
         quality = pose['quality']
-        score   = pose['score']
-        rule_sc = pose['rule_score']
-        sim     = pose['similarity']
         phases  = pose['phase_scores']
         tips    = result['feedback']
 
+        failed_rules = [t for t in tips if t.startswith('[!]')]
+        passed_rules = [t for t in tips if t.startswith('[OK]')]
+        phase_weak   = min(phases, key=phases.get) if phases else 'impact'
+
         user_content = (
-            f"Cricket shot analysis:\n"
-            f"Shot: {shot}  Confidence: {conf:.1%}  Quality: {quality}\n"
-            f"Pose score: {score:.2f}  (rule {rule_sc:.2f}, similarity {sim:.2f})\n"
-            f"Phase scores: backswing {phases.get('backswing',0):.2f}, "
-            f"impact {phases.get('impact',0):.2f}, "
-            f"follow-through {phases.get('follow_through',0):.2f}\n"
-            f"Coaching flags: {'; '.join(tips)}\n\n"
-            f"Write a plain-text coaching summary in exactly 3 sentences. "
-            f"Sentence 1: what the batter did well. "
-            f"Sentence 2: the single most important flaw to fix. "
-            f"Sentence 3: one specific drill or cue to fix it. "
-            f"ASCII characters only - no dashes longer than a hyphen, no curly quotes, no special symbols."
+            f"Internal analysis data (use this to inform your coaching - do NOT quote any numbers or scores):\n"
+            f"Shot played: {shot}\n"
+            f"Overall technique quality: {quality}\n"
+            f"Weakest phase: {phase_weak}\n"
+            f"Technique issues: {'; '.join(failed_rules) if failed_rules else 'none'}\n"
+            f"What was done well: {'; '.join(passed_rules) if passed_rules else 'general technique'}\n\n"
+            f"Write exactly 1-2 complete sentences as a coaching summary for this {shot}. "
+            f"Each sentence must be fully finished - never cut off mid-thought. "
+            f"Never mention any numbers, percentages, or scores. "
+            f"Use fresh varied wording - avoid generic phrases. "
+            f"Pack the key insight and main correction into those 1-2 sentences. "
+            f"ASCII characters only - no markdown, no asterisks, no em-dashes, no curly quotes."
         )
         response = client.messages.create(
             model='claude-opus-4-7',
-            max_tokens=300,
+            max_tokens=180,
             system=[{
                 "type": "text",
                 "text": (
-                    "You are a cricket batting coach. Reply in plain ASCII text only. "
-                    "No markdown, no asterisks, no bullet points, no em-dashes, "
-                    "no curly quotes. Use only standard keyboard characters."
+                    "You are an experienced cricket batting coach giving concise, specific feedback. "
+                    "Write in plain conversational English. "
+                    "Never include numbers, scores, or percentages in your reply. "
+                    "No markdown, no asterisks, no bullet points, no em-dashes, no curly quotes. "
+                    "Use only standard keyboard characters. Vary your language naturally."
                 ),
                 "cache_control": {"type": "ephemeral"},
             }],
