@@ -18,8 +18,9 @@ const STEPS = [
   },
   {
     icon: Download,
-    title: "Save & Export",
-    description: "Download the annotated video and analysis report.",
+    title: "Download",
+    description: "Download the annotated video",
+ 
   },
 ];
 
