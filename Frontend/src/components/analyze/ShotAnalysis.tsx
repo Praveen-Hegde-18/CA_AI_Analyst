@@ -37,9 +37,6 @@ export default function ShotAnalysis({ data }: ShotAnalysisProps) {
             </p>
           </div>
         </div>
-        <p className="font-sans text-[11px] leading-relaxed text-muted">
-          {data.verdictDetail}
-        </p>
       </section>
 
       <div className="h-px bg-[rgba(255,255,255,0.06)]" />
