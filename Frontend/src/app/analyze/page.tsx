@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/layout/Sidebar";
 import ShotMetrics from "@/components/analyze/ShotMetrics";
 import VideoPlayer from "@/components/analyze/VideoPlayer";
 import ShotAnalysis from "@/components/analyze/ShotAnalysis";
@@ -27,32 +26,41 @@ const MOCK_DATA: ShotAnalysisData = {
 };
 
 export default function AnalyzePage() {
-  const [analysisData, setAnalysisData] = useState<ShotAnalysisData>(MOCK_DATA);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [data, setData] = useState<ShotAnalysisData>(MOCK_DATA);
+  const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("shotResult");
-    if (raw) {
-      try {
-        const { analysisData: data, videoUrl: url } = JSON.parse(raw);
-        if (data) setAnalysisData(data);
-        if (url) setVideoUrl(url);
-      } catch {
-        // malformed storage — fall back to mock
-      }
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.analysisData) setData(parsed.analysisData);
+      if (parsed.videoUrl) setVideoUrl(parsed.videoUrl);
+    } catch {
+      // malformed storage — fall through to mock data
     }
   }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-8 py-5">
-          <h1 className="font-frama text-2xl font-black text-foreground">
-            Analyze Video
-          </h1>
+        <header className="flex items-center justify-between border-b border-[rgba(255,255,255,0.07)] px-6 py-4">
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/kabuni-k.png" alt="Kabuni" width={36} height={36} className="rounded-lg" />
+            <div>
+              <h1 className="font-frama text-xl font-black leading-tight text-brand">
+                Kabuni Shot Analysis
+              </h1>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="font-sans text-[10px] text-foreground">powered by</span>
+                <span className="inline-flex items-center rounded-sm border border-[rgba(255,255,255,0.35)] px-1.5 py-0.5 font-machina text-[10px] font-[800] uppercase tracking-wider text-foreground">
+                  Cricket Australia
+                </span>
+              </div>
+            </div>
+          </div>
           <Link
             href="/"
             className="inline-flex items-center gap-2 rounded-lg border border-[rgba(255,255,255,0.1)] px-4 py-2 font-machina text-xs font-[800] text-muted transition-colors hover:border-[rgba(255,255,255,0.2)] hover:text-foreground"
@@ -63,10 +71,10 @@ export default function AnalyzePage() {
         </header>
 
         {/* Three-panel layout */}
-        <div className="relative flex flex-1 gap-4 overflow-hidden p-6">
-          <ShotMetrics data={analysisData} />
-          <VideoPlayer shotType={analysisData.shotType} side={analysisData.side} videoUrl={videoUrl ?? undefined} />
-          <ShotAnalysis data={analysisData} videoUrl={videoUrl ?? undefined} />
+        <div className="relative flex flex-1 min-h-0 gap-3 overflow-hidden p-4">
+          <ShotMetrics data={data} />
+          <VideoPlayer shotType={data.shotType} videoUrl={videoUrl} />
+          <ShotAnalysis data={data} videoUrl={videoUrl} />
         </div>
       </main>
     </div>

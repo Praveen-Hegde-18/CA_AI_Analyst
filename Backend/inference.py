@@ -28,7 +28,7 @@ IDEAL_POSES_RAW_PATH = ROOT / "ML_layer" / "ideal_poses_raw.npy"
 
 # ── Constants ──────────────────────────────────────────────────────────────
 TARGET_LEN         = 100
-CONF_THRESHOLD     = 0.80
+CONF_THRESHOLD     = 0.60
 IMPACT_CONF_THRESH = 0.70
 COLOR_IMPACT       = (0, 50, 255)
 
@@ -845,9 +845,6 @@ def run_inference(video_path: str, output_path: str) -> dict | None:
     fourcc = cv2.VideoWriter_fourcc(*'avc1')
     out    = cv2.VideoWriter(output_path, fourcc, fps, (W, H))
 
-    feedback_ph     = 18 + 22 * len(feedback)
-    impact_panel_py = 252 + feedback_ph + 8
-
     for frame_idx in range(total_frames):
         ret, frame = cap.read()
         if not ret:
@@ -860,11 +857,6 @@ def run_inference(video_path: str, output_path: str) -> dict | None:
         if lm is not None:
             mp_draw.draw_landmarks(frame, lm, mp_pose.POSE_CONNECTIONS, lm_style, conn_style)
 
-        draw_hud(frame, result, frame_idx, total_frames, in_roi,
-                 raw_impact_frame=raw_video_impact_frame)
-        draw_feedback_panel(frame, feedback, py=252)
-        draw_impact_panel(frame, result, py=impact_panel_py)
-        draw_llm_panel(frame, llm_summary)
         out.write(frame)
 
     cap.release()

@@ -29,8 +29,8 @@ export interface ShotAnalysisData {
   verdictDetail: string;
   keyPoints: KeyPoint[];
   shotSummary: string;
-  // Optional ML pipeline metrics — present when real backend data is returned
-  quality?: string;
+  // ML pipeline metrics
+  quality?: "Correct" | "Average" | "Incorrect";
   poseScore?: number;
   similarity?: number;
   ruleScore?: number;

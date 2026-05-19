@@ -69,44 +69,42 @@ export default function DropZone() {
     if (!selectedFile || isAnalyzing) return;
     setIsAnalyzing(true);
     setError(null);
-
     try {
-      // Pre-flight: confirm backend is reachable before uploading
+      // Pre-flight: verify the backend is reachable before uploading
       try {
-        const healthController = new AbortController();
-        const healthTimer = setTimeout(() => healthController.abort(), 4000);
-        await fetch("http://localhost:8000/health", { signal: healthController.signal });
-        clearTimeout(healthTimer);
+        await fetch("http://localhost:8000/health", {
+          signal: AbortSignal.timeout(4000),
+        });
       } catch {
-        setError("Cannot reach the analysis server on port 8000. Make sure the backend is running.");
-        setIsAnalyzing(false);
-        return;
+        throw new Error(
+          "Cannot reach the analysis server on port 8000. Make sure the backend is running."
+        );
       }
 
       const formData = new FormData();
       formData.append("video", selectedFile);
-
       const res = await fetch("http://localhost:8000/analyze", {
         method: "POST",
         body: formData,
       });
 
       if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        const detail = err?.detail;
         if (res.status === 422) {
-          setError("Pose detection failed — ensure the video shows a single-ball delivery with a clearly visible batter.");
-        } else {
-          const body = await res.json().catch(() => ({}));
-          setError(body?.detail ?? `Analysis failed (status ${res.status}). Check the backend logs.`);
+          throw new Error(detail ?? "Video could not be processed — ensure it shows one full delivery.");
         }
-        setIsAnalyzing(false);
-        return;
+        if (res.status === 500) {
+          throw new Error(detail ?? "Server error during inference. Check the backend logs.");
+        }
+        throw new Error(detail ?? `Unexpected server error (HTTP ${res.status}).`);
       }
 
       const json = await res.json();
       sessionStorage.setItem("shotResult", JSON.stringify(json));
       router.push("/analyze");
-    } catch {
-      setError("Network error — the connection was lost during upload. Please try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed. Please try again.");
       setIsAnalyzing(false);
     }
   }, [selectedFile, isAnalyzing, router]);
@@ -151,7 +149,7 @@ export default function DropZone() {
         {selectedFile ? (
           <div className="flex w-full flex-col items-center gap-1">
             <p className="w-full truncate text-center font-machina text-sm font-[800] text-foreground">
-              {selectedFile.name}
+              video_clip.mp4
             </p>
             <p className="font-sans text-xs text-muted">
               {(selectedFile.size / (1024 * 1024)).toFixed(1)} MB — ready to upload
