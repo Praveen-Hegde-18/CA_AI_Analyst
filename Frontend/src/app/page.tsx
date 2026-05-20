@@ -21,7 +21,7 @@ export default function UploadPage() {
                 Kabuni Shot Analysis
               </h1>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="font-sans text-[10px] text-foreground">powered by</span>
+
                 <span className="inline-flex items-center rounded-sm border border-[rgba(255,255,255,0.35)] px-1.5 py-0.5 font-machina text-[10px] font-[800] uppercase tracking-wider text-foreground">
                   Cricket Australia
                 </span>
